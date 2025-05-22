@@ -1,0 +1,257 @@
+openapi: 3.0.0
+info:
+  title: Scoring & Analytics API
+  description: RESTful APIs for handling scoring and analytics flow
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Local server
+
+paths:
+  /tests/{testId}/score:
+    post:
+      summary: Score a test attempt
+      description: Auto-scores objective questions and flags subjective for manual review.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                attempt_id:
+                  type: integer
+                  example: 1001
+      responses:
+        200:
+          description: Scoring completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScoreResponse'
+        404:
+          description: Attempt not found
+
+  /tests/{testId}/manual-review:
+    post:
+      summary: Submit manual review for subjective answers
+      description: Teacher reviews and scores subjective answers.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reviews:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      attempt_answer_id:
+                        type: integer
+                        example: 501
+                      score:
+                        type: number
+                        example: 2
+                      feedback:
+                        type: string
+                        example: "Good explanation, but missing key point."
+      responses:
+        200:
+          description: Manual review submitted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Manual review submitted successfully
+
+  /tests/{testId}/analytics/student:
+    get:
+      summary: Get analytics for student
+      description: Returns analytics for the logged-in student for a specific test.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Student analytics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentAnalyticsResponse'
+
+  /tests/{testId}/analytics:
+    get:
+      summary: Get analytics for admin/teacher
+      description: Returns aggregate analytics for a test (admin/teacher only).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Test analytics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestAnalyticsResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ScoreResponse:
+      type: object
+      properties:
+        attempt_id:
+          type: integer
+        auto_scored:
+          type: boolean
+        manual_review_required:
+          type: boolean
+        total_score:
+          type: number
+        is_graded:
+          type: boolean
+        feedback:
+          type: string
+          example: "Awaiting manual review for subjective answers."
+
+    StudentAnalyticsResponse:
+      type: object
+      properties:
+        test_id:
+          type: integer
+        user_id:
+          type: integer
+        total_score:
+          type: number
+        percentage:
+          type: number
+        breakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              subject:
+                type: string
+              topic:
+                type: string
+              score:
+                type: number
+              total:
+                type: number
+        time_per_question:
+          type: array
+          items:
+            type: object
+            properties:
+              question_id:
+                type: integer
+              time_spent_seconds:
+                type: integer
+        accuracy:
+          type: number
+        strengths:
+          type: array
+          items:
+            type: string
+        weaknesses:
+          type: array
+          items:
+            type: string
+        class_average:
+          type: number
+        progress_over_time:
+          type: array
+          items:
+            type: object
+            properties:
+              attempt_date:
+                type: string
+                format: date-time
+              score:
+                type: number
+        feedback:
+          type: string
+
+    TestAnalyticsResponse:
+      type: object
+      properties:
+        test_id:
+          type: integer
+        average_score:
+          type: number
+        highest_score:
+          type: number
+        lowest_score:
+          type: number
+        total_attempts:
+          type: integer
+        question_stats:
+          type: array
+          items:
+            type: object
+            properties:
+              question_id:
+                type: integer
+              correct_percentage:
+                type: number
+              average_time:
+                type: number
+        student_performance:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: integer
+              score:
+                type: number
+              accuracy:
+                type: number
+              time_spent:
+                type: number
+              status:
+                type: string
+        export_links:
+          type: array
+          items:
+            type: string
+        insights:
+          type: array
+          items:
+            type: string

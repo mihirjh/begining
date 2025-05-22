@@ -1,0 +1,536 @@
+openapi: 3.0.0
+info:
+  title: Test Management API
+  description: RESTful APIs for handling test management flow
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Local server
+
+paths:
+  /tests:
+    post:
+      summary: Create a new test
+      description: Admin/Teacher creates a new test with details and questions.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestCreateRequest'
+      responses:
+        201:
+          description: Test created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestResponse'
+        400:
+          description: Invalid input
+
+    get:
+      summary: Get all tests
+      description: Returns a list of all tests (admin/teacher) or assigned/available tests (student).
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of tests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TestResponse'
+
+  /tests/{testId}:
+    get:
+      summary: Get test details
+      description: Returns details of a specific test.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Test details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestResponse'
+        404:
+          description: Test not found
+
+    put:
+      summary: Update a test
+      description: Update test details or questions.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestUpdateRequest'
+      responses:
+        200:
+          description: Test updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestResponse'
+        404:
+          description: Test not found
+
+    delete:
+      summary: Delete a test
+      description: Deletes a test.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        204:
+          description: Test deleted
+        404:
+          description: Test not found
+
+  /tests/{testId}/assign:
+    post:
+      summary: Assign test to students or groups
+      description: Assigns a test to selected students or groups.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestAssignRequest'
+      responses:
+        200:
+          description: Test assigned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Test assigned successfully
+        404:
+          description: Test or users/groups not found
+
+  /tests/{testId}/questions:
+    get:
+      summary: Get questions for a test
+      description: Returns all questions for a specific test.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: List of questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuestionResponse'
+
+  /tests/{testId}/attempt:
+    post:
+      summary: Start or submit a test attempt
+      description: Student starts or submits a test attempt.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestAttemptRequest'
+      responses:
+        200:
+          description: Attempt submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestAttemptResponse'
+        400:
+          description: Invalid input
+        404:
+          description: Test not found
+
+    get:
+      summary: Get student's attempt for a test
+      description: Returns the student's attempt details for a test.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Attempt details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestAttemptResponse'
+
+  /tests/{testId}/results:
+    get:
+      summary: Get test results
+      description: Returns results for a test (student's own or all students for admin/teacher).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Test results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestResultsResponse'
+
+  /tests/{testId}/analytics:
+    get:
+      summary: Get test analytics
+      description: Returns analytics for a test (admin/teacher only).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Test analytics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestAnalyticsResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TestCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Maths Practice Test"
+        subject_id:
+          type: integer
+          example: 1
+        pattern:
+          type: string
+          example: "MCQ"
+        duration_minutes:
+          type: integer
+          example: 60
+        start_time:
+          type: string
+          format: date-time
+          example: "2025-05-18T09:00:00Z"
+        end_time:
+          type: string
+          format: date-time
+          example: "2025-05-18T11:00:00Z"
+        attempt_limit:
+          type: integer
+          example: 1
+        question_ids:
+          type: array
+          items:
+            type: integer
+          example: [101, 102, 103]
+
+    TestUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        pattern:
+          type: string
+        duration_minutes:
+          type: integer
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        attempt_limit:
+          type: integer
+        question_ids:
+          type: array
+          items:
+            type: integer
+
+    TestResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Maths Practice Test"
+        subject_id:
+          type: integer
+          example: 1
+        pattern:
+          type: string
+          example: "MCQ"
+        duration_minutes:
+          type: integer
+          example: 60
+        start_time:
+          type: string
+          format: date-time
+          example: "2025-05-18T09:00:00Z"
+        end_time:
+          type: string
+          format: date-time
+          example: "2025-05-18T11:00:00Z"
+        attempt_limit:
+          type: integer
+          example: 1
+        is_published:
+          type: boolean
+          example: true
+        created_by:
+          type: integer
+          example: 2
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-05-17T10:00:00Z"
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionResponse'
+
+    TestAssignRequest:
+      type: object
+      properties:
+        user_ids:
+          type: array
+          items:
+            type: integer
+          example: [2, 3, 4]
+        group_ids:
+          type: array
+          items:
+            type: integer
+          example: [1]
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        attempt_limit:
+          type: integer
+
+    QuestionResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 101
+        subject_id:
+          type: integer
+          example: 1
+        topic_id:
+          type: integer
+          example: 5
+        question_type:
+          type: string
+          example: "mcq_single"
+        content:
+          type: string
+          example: "What is 2 + 2?"
+        difficulty:
+          type: string
+          example: "easy"
+        explanation:
+          type: string
+          example: "2 + 2 equals 4."
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionOption'
+
+    QuestionOption:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        option_text:
+          type: string
+          example: "4"
+        is_correct:
+          type: boolean
+          example: true
+
+    TestAttemptRequest:
+      type: object
+      properties:
+        answers:
+          type: array
+          items:
+            type: object
+            properties:
+              question_id:
+                type: integer
+              selected_option_ids:
+                type: array
+                items:
+                  type: integer
+              answer_text:
+                type: string
+
+    TestAttemptResponse:
+      type: object
+      properties:
+        attempt_id:
+          type: integer
+          example: 1001
+        test_id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 2
+        started_at:
+          type: string
+          format: date-time
+          example: "2025-05-18T09:00:00Z"
+        submitted_at:
+          type: string
+          format: date-time
+          example: "2025-05-18T10:00:00Z"
+        score:
+          type: number
+          example: 8.5
+        is_graded:
+          type: boolean
+          example: true
+        answers:
+          type: array
+          items:
+            type: object
+            properties:
+              question_id:
+                type: integer
+              selected_option_ids:
+                type: array
+                items:
+                  type: integer
+              answer_text:
+                type: string
+              is_correct:
+                type: boolean
+
+    TestResultsResponse:
+      type: object
+      properties:
+        test_id:
+          type: integer
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: integer
+              score:
+                type: number
+              submitted_at:
+                type: string
+                format: date-time
+
+    TestAnalyticsResponse:
+      type: object
+      properties:
+        test_id:
+          type: integer
+        average_score:
+          type: number
+        highest_score:
+          type: number
+        lowest_score:
+          type: number
+        total_attempts:
+          type: integer
+        question_stats:
+          type: array
+          items:
+            type: object
+            properties:
+              question_id:
+                type: integer
+              correct_percentage:
+                type: number
+              average_time:
+                type: number
+        topic_stats:
+          type: array
+          items:
+            type: object
+            properties:
+              topic_id:
+                type: integer
+              average_score:
+                type: number

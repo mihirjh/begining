@@ -1,0 +1,357 @@
+openapi: 3.0.0
+info:
+  title: Test Taking API
+  description: RESTful APIs for handling test taking flow
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Local server
+
+paths:
+  /tests/available:
+    get:
+      summary: Get available tests for student
+      description: Returns a list of tests available for the logged-in student.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of available tests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TestSummary'
+
+  /tests/{testId}/instructions:
+    get:
+      summary: Get test instructions
+      description: Returns instructions and details for a specific test.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Test instructions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestInstructions'
+
+  /tests/{testId}/start:
+    post:
+      summary: Start a test attempt
+      description: Student starts a test attempt.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        201:
+          description: Test attempt started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestAttemptSession'
+
+  /tests/{testId}/questions:
+    get:
+      summary: Get questions for a test attempt
+      description: Returns questions for the student's current attempt.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: List of questions for the attempt
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TestQuestion'
+
+  /tests/{testId}/answer:
+    post:
+      summary: Save or update answer for a question
+      description: Student saves or updates answer for a question in the current attempt.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnswerRequest'
+      responses:
+        200:
+          description: Answer saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnswerResponse'
+        400:
+          description: Invalid input
+
+  /tests/{testId}/submit:
+    post:
+      summary: Submit test attempt
+      description: Student submits the test attempt.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Test submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitResponse'
+        400:
+          description: Invalid input
+
+  /tests/{testId}/attempt:
+    get:
+      summary: Get student's attempt details
+      description: Returns the student's attempt details for a test.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Attempt details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestAttemptDetails'
+
+  /tests/{testId}/results:
+    get:
+      summary: Get test results for student
+      description: Returns the results for the student's attempt.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Test results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestResult'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TestSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Maths Practice Test"
+        subject:
+          type: string
+          example: "Mathematics"
+        duration_minutes:
+          type: integer
+          example: 60
+        status:
+          type: string
+          example: "available"
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+
+    TestInstructions:
+      type: object
+      properties:
+        test_id:
+          type: integer
+        name:
+          type: string
+        subject:
+          type: string
+        pattern:
+          type: string
+        duration_minutes:
+          type: integer
+        instructions:
+          type: string
+        total_questions:
+          type: integer
+
+    TestAttemptSession:
+      type: object
+      properties:
+        attempt_id:
+          type: integer
+        test_id:
+          type: integer
+        started_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+
+    TestQuestion:
+      type: object
+      properties:
+        id:
+          type: integer
+        question_type:
+          type: string
+          example: "mcq_single"
+        content:
+          type: string
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              option_text:
+                type: string
+        flagged:
+          type: boolean
+        answered:
+          type: boolean
+
+    AnswerRequest:
+      type: object
+      properties:
+        question_id:
+          type: integer
+        selected_option_ids:
+          type: array
+          items:
+            type: integer
+        answer_text:
+          type: string
+        flagged:
+          type: boolean
+
+    AnswerResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Answer saved successfully
+
+    SubmitResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Test submitted successfully
+        attempt_id:
+          type: integer
+        submitted_at:
+          type: string
+          format: date-time
+
+    TestAttemptDetails:
+      type: object
+      properties:
+        attempt_id:
+          type: integer
+        test_id:
+          type: integer
+        started_at:
+          type: string
+          format: date-time
+        submitted_at:
+          type: string
+          format: date-time
+        answers:
+          type: array
+          items:
+            type: object
+            properties:
+              question_id:
+                type: integer
+              selected_option_ids:
+                type: array
+                items:
+                  type: integer
+              answer_text:
+                type: string
+              flagged:
+                type: boolean
+
+    TestResult:
+      type: object
+      properties:
+        attempt_id:
+          type: integer
+        test_id:
+          type: integer
+        score:
+          type: number
+        is_graded:
+          type: boolean
+        submitted_at:
+          type: string
+          format: date-time
+        breakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              section:
+                type: string
+              score:
+                type: number
+              total:
+                type: number
+        feedback:
+          type: string
+          example: "Great job! Review algebra for improvement."

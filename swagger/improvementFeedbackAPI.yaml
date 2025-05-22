@@ -1,0 +1,203 @@
+openapi: 3.0.0
+info:
+  title: Feedback & Improvement API
+  description: RESTful APIs for handling feedback and improvement flow
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Local server
+
+paths:
+  /feedback/suggestions:
+    get:
+      summary: Get personalized practice suggestions
+      description: Returns a list of topics/questions for practice based on user's weak areas.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of personalized suggestions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuggestionsResponse'
+
+  /feedback/practice:
+    get:
+      summary: Get practice questions
+      description: Returns practice questions for a selected subject/topic or system recommendations.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: subject_id
+          in: query
+          schema:
+            type: integer
+        - name: topic_id
+          in: query
+          schema:
+            type: integer
+        - name: recommended
+          in: query
+          schema:
+            type: boolean
+      responses:
+        200:
+          description: List of practice questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PracticeQuestion'
+
+  /feedback/practice/submit:
+    post:
+      summary: Submit practice answer
+      description: Submit an answer for a practice question and receive immediate feedback.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PracticeAnswerRequest'
+      responses:
+        200:
+          description: Practice answer feedback
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PracticeAnswerResponse'
+
+  /feedback/review-answers/{testId}:
+    get:
+      summary: Review answers for a completed test
+      description: Returns student's answers, correct answers, and explanations for a test.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Review answers for test
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewAnswersResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    SuggestionsResponse:
+      type: object
+      properties:
+        suggestions:
+          type: array
+          items:
+            type: object
+            properties:
+              subject_id:
+                type: integer
+                example: 1
+              topic_id:
+                type: integer
+                example: 2
+              topic_name:
+                type: string
+                example: "Algebra"
+              reason:
+                type: string
+                example: "Low accuracy in recent tests"
+              recommended_questions:
+                type: array
+                items:
+                  type: integer
+                example: [101, 102]
+
+    PracticeQuestion:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 101
+        subject_id:
+          type: integer
+          example: 1
+        topic_id:
+          type: integer
+          example: 2
+        question_type:
+          type: string
+          example: "mcq_single"
+        content:
+          type: string
+          example: "What is 2 + 2?"
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              option_text:
+                type: string
+        explanation:
+          type: string
+          example: "2 + 2 equals 4."
+
+    PracticeAnswerRequest:
+      type: object
+      properties:
+        question_id:
+          type: integer
+        selected_option_ids:
+          type: array
+          items:
+            type: integer
+        answer_text:
+          type: string
+
+    PracticeAnswerResponse:
+      type: object
+      properties:
+        correct:
+          type: boolean
+        explanation:
+          type: string
+        message:
+          type: string
+          example: "Correct! Well done."
+
+    ReviewAnswersResponse:
+      type: object
+      properties:
+        test_id:
+          type: integer
+        answers:
+          type: array
+          items:
+            type: object
+            properties:
+              question_id:
+                type: integer
+              question_text:
+                type: string
+              student_answer:
+                type: string
+              correct_answer:
+                type: string
+              explanation:
+                type: string
+              is_correct:
+                type: boolean

@@ -1,0 +1,276 @@
+openapi: 3.0.0
+info:
+  title: Question Bank API
+  description: RESTful APIs for handling question bank flow
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Local server
+
+paths:
+  /questions:
+    post:
+      summary: Add a new question
+      description: Admin/Teacher adds a new question to the question bank.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionCreateRequest'
+      responses:
+        201:
+          description: Question created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionResponse'
+        400:
+          description: Invalid input
+
+    get:
+      summary: Get all questions
+      description: Returns a list of all questions with optional filters.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: subject_id
+          in: query
+          schema:
+            type: integer
+        - name: topic_id
+          in: query
+          schema:
+            type: integer
+        - name: difficulty
+          in: query
+          schema:
+            type: string
+        - name: question_type
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: List of questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuestionResponse'
+
+  /questions/bulk-upload:
+    post:
+      summary: Bulk upload questions
+      description: Upload multiple questions via CSV/Excel file.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        200:
+          description: Bulk upload result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkUploadResponse'
+        400:
+          description: Invalid file or data
+
+  /questions/{questionId}:
+    get:
+      summary: Get question details
+      description: Returns details of a specific question.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Question details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionResponse'
+        404:
+          description: Question not found
+
+    put:
+      summary: Update a question
+      description: Edit details of a specific question.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionUpdateRequest'
+      responses:
+        200:
+          description: Question updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionResponse'
+        404:
+          description: Question not found
+
+    delete:
+      summary: Delete a question
+      description: Deletes a specific question.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        204:
+          description: Question deleted
+        404:
+          description: Question not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    QuestionCreateRequest:
+      type: object
+      properties:
+        subject_id:
+          type: integer
+          example: 1
+        topic_id:
+          type: integer
+          example: 2
+        question_type:
+          type: string
+          example: mcq_single
+        content:
+          type: string
+          example: "What is the capital of France?"
+        difficulty:
+          type: string
+          example: "easy"
+        explanation:
+          type: string
+          example: "Paris is the capital of France."
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionOptionInput'
+
+    QuestionOptionInput:
+      type: object
+      properties:
+        option_text:
+          type: string
+          example: "Paris"
+        is_correct:
+          type: boolean
+          example: true
+
+    QuestionUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/QuestionCreateRequest'
+
+    QuestionResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 101
+        subject_id:
+          type: integer
+          example: 1
+        topic_id:
+          type: integer
+          example: 2
+        question_type:
+          type: string
+          example: mcq_single
+        content:
+          type: string
+          example: "What is the capital of France?"
+        difficulty:
+          type: string
+          example: "easy"
+        explanation:
+          type: string
+          example: "Paris is the capital of France."
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionOption'
+
+    QuestionOption:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        option_text:
+          type: string
+          example: "Paris"
+        is_correct:
+          type: boolean
+          example: true
+
+    BulkUploadResponse:
+      type: object
+      properties:
+        success_count:
+          type: integer
+          example: 10
+        error_count:
+          type: integer
+          example: 2
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              row:
+                type: integer
+                example: 5
+              column:
+                type: string
+                example: "content"
+              message:
+                type: string
+                example: "Question text is required"
+        summary:
+          type: string
+          example: "10 questions added, 2 errors found."
